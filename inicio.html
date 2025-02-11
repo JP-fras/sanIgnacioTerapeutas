@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carga de Horas Trabajadas - Comunidad Terapéutica San Ignacio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #d43520;
+            --secondary-color: #f7dd2f;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --text-color: #333;
+            --background-color: #fff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header img {
+            height: 60px;
+            margin-right: 1rem;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .container {
+            padding: 0 2rem;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin: 1.5rem 0;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(212, 53, 32, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 1rem;
+            border: 1px solid #eee;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #b82d1a;
+        }
+
+        .total-section {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .desglose-pago {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-top: 1.5rem;
+        }
+
+        .desglose-pago p {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .desglose-pago span {
+            font-weight: 500;
+        }
+
+        .monto-positivo {
+            color: var(--success-color);
+        }
+
+        .monto-negativo {
+            color: var(--danger-color);
+        }
+
+        #totalPagar {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--success-color);
+        }
+
+        .enviar-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 2rem auto;
+            padding: 1rem;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background-color: var(--primary-color);
+        }
+
+        .adicional-container, .adelanto-container {
+            background: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        #listaAdicionales > div, #listaAdelantos > div {
+            display: flex;
+            gap: 1rem;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <img src="/Assets/logo.jpg" alt="Logo San Ignacio">
+        <h1>Comunidad Terapéutica San Ignacio</h1>
+    </header>
+    <div class="container">
+        <h1>Carga de Horas Trabajadas</h1>
+        
+        <h2>Información Personal</h2>
+        <input type="text" id="nombreApellido" placeholder="Nombre y Apellido">
+        <input type="number" id="valorHoraNormal" placeholder="Valor Hora Normal" step="0.01">
+        <input type="number" id="valorHoraExtra" placeholder="Valor Hora Extra" step="0.01">
+
+        <h2>Selección de Período</h2>
+        <div style="display: flex; gap: 10px;">
+            <select id="anioSeleccionado">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+            </select>
+            <select id="mesSeleccionado">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+        </div>
+
+        <h2>Registro de Horas</h2>
+        <p>*Los dias que no trabajo, no los rellene, dejelos vacios</p>
+        <p>**Rellene los campos por dia de hora de entrada, hora de salida y cantidad de horas normales(horas no extras)</p>
+        <table id="horasTabla">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora Entrada</th>
+                    <th>Hora Salida</th>
+                    <th>Horas Trabajadas</th>
+                    <th>Horas Normales</th>
+                    <th>Horas Extras</th>
+                </tr>
+            </thead>
+            <tbody id="diasMes"></tbody>
+        </table>
+
+        <div class="total-section">
+            <h2>Adicionales</h2>
+            <div id="adicionales">
+                <button onclick="agregarAdicional()">Agregar Adicional</button>
+                <div id="listaAdicionales"></div>
+                <h4>Total Adicionales: <span id="totalAdicionales">$0.00</span></h4>
+            </div>
+
+            <h2>Adelantos</h2>
+            <div id="adelantos">
+                <button onclick="agregarAdelanto()">Agregar Adelanto</button>
+                <div id="listaAdelantos"></div>
+                <h4>Total Adelantos: <span id="totalAdelantos">$0.00</span></h4>
+            </div>
+
+            <div class="desglose-pago">
+                <h3>Desglose del Pago:</h3>
+                <p>Horas Normales: <span id="totalHorasNormales" class="monto-positivo">$0.00</span></p>
+                <p>Horas Extras: <span id="totalHorasExtras" class="monto-positivo">$0.00</span></p>
+                <p>Adicionales: <span id="resumenAdicionales" class="monto-positivo">$0.00</span></p>
+                <p>Adelantos: <span id="resumenAdelantos" class="monto-negativo">$0.00</span></p>
+                <div class="presentismo-container">
+                    <p>Presentismo (10%): 
+                        <select id="presentismo" onchange="calcularTotalPagar()">
+                            <option value="no">No</option>
+                            <option value="si">Sí</option>
+                        </select>
+                        <span id="montoPresentismo" class="monto-positivo">$0.00</span>
+                    </p>
+                </div>
+                <h3>Total a Pagar: <span id="totalPagar">$0.00</span></h3>
+            </div>
+        </div>
+
+        <button class="enviar-btn" onclick="validarEnvio()">ENVIAR</button>
+    </div>
+
+    <script>
+        function generarDiasMes() {
+            const mesSeleccionado = document.getElementById('mesSeleccionado').value;
+            const anioSeleccionado = document.getElementById('anioSeleccionado').value;
+            const diasMes = new Date(anioSeleccionado, mesSeleccionado, 0).getDate();
+            const tbody = document.getElementById('diasMes');
+            tbody.innerHTML = '';
+
+            for (let dia = 1; dia <= diasMes; dia++) {
+                const fecha = new Date(anioSeleccionado, mesSeleccionado - 1, dia);
+                const filaHTML = `
+                    <tr>
+                        <td>${fecha.toLocaleDateString('es-AR')}</td>
+                        <td><input type="time" class="horaEntrada" step="3600"></td>
+                        <td><input type="time" class="horaSalida" step="3600"></td>
+                        <td class="horasTrabajadas">0</td>
+                        <td><input type="number" class="horasNormales" value="0" min="0" step="0.5"></td>
+                        <td class="horasExtras">0</td>
+                    </tr>
+                `;
+                tbody.innerHTML += filaHTML;
+            }
+            agregarEventosCalculoHoras();
+            agregarEventosTimePicker();
+        }
+
+        function agregarEventosCalculoHoras() {
+            const filasHoras = document.querySelectorAll('#diasMes tr');
+            filasHoras.forEach(fila => {
+                const horaEntrada = fila.querySelector('.horaEntrada');
+                const horaSalida = fila.querySelector('.horaSalida');
+                const horasNormales = fila.querySelector('.horasNormales');
+                const horasTrabajadas = fila.querySelector('.horasTrabajadas');
+                const horasExtras = fila.querySelector('.horasExtras');
+
+                [horaEntrada, horaSalida, horasNormales].forEach(input => {
+                    input.addEventListener('change', () => calcularHoras(fila));
+                });
+            });
+        }
+
+        function calcularHoras(fila) {
+            const horaEntrada = fila.querySelector('.horaEntrada').value;
+            const horaSalida = fila.querySelector('.horaSalida').value;
+            const horasNormales = parseFloat(fila.querySelector('.horasNormales').value) || 0;
+
+            if (horaEntrada && horaSalida) {
+                const entrada = new Date(`2023-01-01T${horaEntrada}`);
+                const salida = new Date(`2023-01-01T${horaSalida}`);
+                
+                if (salida < entrada) {
+                    alert('La hora de salida no puede ser menor que la hora de entrada');
+                    fila.querySelector('.horaSalida').value = horaEntrada;
+                    return;
+                }
+
+                const horasTrabajadas = (salida - entrada) / (1000 * 60 * 60);
+                
+                if (horasNormales > horasTrabajadas) {
+                    alert('Las horas normales no pueden exceder las horas trabajadas');
+                    fila.querySelector('.horasNormales').value = horasTrabajadas;
+                    return;
+                }
+
+                fila.querySelector('.horasTrabajadas').textContent = horasTrabajadas.toFixed(2);
+                const horasExtras = Math.max(0, horasTrabajadas - horasNormales);
+                fila.querySelector('.horasExtras').textContent = horasExtras.toFixed(2);
+            }
+            calcularTotalPagar();
+        }
+
+        function agregarAdicional() {
+            const container = document.createElement('div');
+            container.innerHTML = `
+                <input type="text" placeholder="Razón" class="adicionalRazon">
+                <input type="number" placeholder="Monto" class="adicionalMonto" step="0.01">
+                <button onclick="this.parentElement.remove(); calcularTotalPagar();">Eliminar</button>
+            `;
+            document.getElementById('listaAdicionales').appendChild(container);
+        }
+
+        function agregarAdelanto() {
+            const container = document.createElement('div');
+            container.innerHTML = `
+                <input type="text" placeholder="Razón" class="adelantoRazon">
+                <input type="number" placeholder="Monto" class="adelantoMonto" step="0.01">
+                <button onclick="this.parentElement.remove(); calcularTotalPagar();">Eliminar</button>
+            `;
+            document.getElementById('listaAdelantos').appendChild(container);
+        }
+
+        function calcularTotalPagar() {
+            const valorHoraNormal = parseFloat(document.getElementById('valorHoraNormal').value) || 0;
+            const valorHoraExtra = parseFloat(document.getElementById('valorHoraExtra').value) || 0;
+
+            let totalHorasNormales = 0;
+            let totalHorasExtras = 0;
+            let totalAdicionales = 0;
+            let totalAdelantos = 0;
+
+            document.querySelectorAll('#diasMes tr').forEach(fila => {
+                totalHorasNormales += parseFloat(fila.querySelector('.horasNormales').value) || 0;
+                totalHorasExtras += parseFloat(fila.querySelector('.horasExtras').textContent) || 0;
+            });
+
+            document.querySelectorAll('.adicionalMonto').forEach(adicional => {
+                totalAdicionales += parseFloat(adicional.value) || 0;
+            });
+
+            document.querySelectorAll('.adelantoMonto').forEach(adelanto => {
+                totalAdelantos += parseFloat(adelanto.value) || 0;
+            });
+
+            const subtotalNormal = totalHorasNormales * valorHoraNormal;
+            const subtotalExtras = totalHorasExtras * valorHoraExtra;
+            const subtotalAntesPresent = subtotalNormal + subtotalExtras + totalAdicionales - totalAdelantos;
+            
+            // Calcular presentismo
+            const tienePresentismo = document.getElementById('presentismo').value === 'si';
+            const montoPresentismo = tienePresentismo ? subtotalAntesPresent * 0.1 : 0;
+            const total = subtotalAntesPresent + montoPresentismo;
+
+            document.getElementById('totalHorasNormales').textContent = `$${subtotalNormal.toFixed(2)}`;
+            document.getElementById('totalHorasExtras').textContent = `$${subtotalExtras.toFixed(2)}`;
+            document.getElementById('totalAdicionales').textContent = `$${totalAdicionales.toFixed(2)}`;
+            document.getElementById('totalAdelantos').textContent = `$${totalAdelantos.toFixed(2)}`;
+            document.getElementById('resumenAdicionales').textContent = `$${totalAdicionales.toFixed(2)}`;
+            document.getElementById('resumenAdelantos').textContent = `$${totalAdelantos.toFixed(2)}`;
+            document.getElementById('montoPresentismo').textContent = `$${montoPresentismo.toFixed(2)}`;
+            document.getElementById('totalPagar').textContent = `$${total.toFixed(2)}`;
+        }
+
+        function validarEnvio() {
+            const confirmacion = confirm('Una vez aceptado se le va a descargar un Excel, por favor ENVIAR EL EXCEL POR MAIL a comunidadsanignacio@yahoo.com.ar, a continuacion se le abrira su mail predeterminado en windows.');
+            if (confirmacion) {
+                generarExcel();
+                enviarPorEmail();
+            }
+        }
+
+        function generarExcel() {
+            const wb = XLSX.utils.book_new();
+            const datos = [];
+
+            // Información Personal
+            datos.push(
+                ['REGISTRO DE HORAS Y PAGOS'],
+                [''],
+                ['INFORMACIÓN PERSONAL'],
+                ['Nombre y Apellido', document.getElementById('nombreApellido').value],
+                ['Valor Hora Normal', `$${document.getElementById('valorHoraNormal').value}`],
+                ['Valor Hora Extra', `$${document.getElementById('valorHoraExtra').value}`],
+                ['']
+            );
+
+            // Período
+            const mes = document.getElementById('mesSeleccionado').options[document.getElementById('mesSeleccionado').selectedIndex].text;
+            const anio = document.getElementById('anioSeleccionado').value;
+            datos.push(
+                ['PERÍODO'],
+                ['Mes', mes],
+                ['Año', anio],
+                ['']
+            );
+
+            // Registro de Horas
+            datos.push(['REGISTRO DE HORAS DIARIO']);
+            datos.push([
+                'Fecha', 
+                'Hora Entrada', 
+                'Hora Salida', 
+                'Horas Trabajadas', 
+                'Horas Normales', 
+                'Horas Extras'
+            ]);
+
+            document.querySelectorAll('#diasMes tr').forEach(fila => {
+                datos.push([
+                    fila.querySelector('td:first-child').textContent,
+                    fila.querySelector('.horaEntrada').value,
+                    fila.querySelector('.horaSalida').value,
+                    fila.querySelector('.horasTrabajadas').textContent,
+                    fila.querySelector('.horasNormales').value,
+                    fila.querySelector('.horasExtras').textContent
+                ]);
+            });
+            datos.push(['']);
+
+            // Adicionales
+            datos.push(['ADICIONALES']);
+            datos.push(['Razón', 'Monto']);
+            document.querySelectorAll('#listaAdicionales div').forEach(adicional => {
+                datos.push([
+                    adicional.querySelector('.adicionalRazon').value,
+                    `$${adicional.querySelector('.adicionalMonto').value}`
+                ]);
+            });
+            datos.push(['Total Adicionales', document.getElementById('totalAdicionales').textContent]);
+            datos.push(['']);
+
+            // Adelantos
+            datos.push(['ADELANTOS']);
+            datos.push(['Razón', 'Monto']);
+            document.querySelectorAll('#listaAdelantos div').forEach(adelanto => {
+                datos.push([
+                    adelanto.querySelector('.adelantoRazon').value,
+                    `$${adelanto.querySelector('.adelantoMonto').value}`
+                ]);
+            });
+            datos.push(['Total Adelantos', document.getElementById('totalAdelantos').textContent]);
+            datos.push(['']);
+
+            // Agregar presentismo al desglose final
+            const presentismo = document.getElementById('presentismo').value === 'si' ? 'Sí' : 'No';
+            const montoPresentismo = document.getElementById('montoPresentismo').textContent;
+            
+            datos.push(
+                ['DESGLOSE FINAL'],
+                ['Subtotal Horas Normales', document.getElementById('totalHorasNormales').textContent],
+                ['Subtotal Horas Extras', document.getElementById('totalHorasExtras').textContent],
+                ['Total Adicionales', document.getElementById('resumenAdicionales').textContent],
+                ['Total Adelantos', document.getElementById('resumenAdelantos').textContent],
+                ['Presentismo', presentismo],
+                ['Monto Presentismo (10%)', montoPresentismo],
+                [''],
+                ['TOTAL A PAGAR', document.getElementById('totalPagar').textContent]
+            );
+
+            // Crear hoja de cálculo
+            const ws = XLSX.utils.aoa_to_sheet(datos);
+
+            // Ajustar ancho de columnas
+            const wscols = [
+                {wch: 20}, // A
+                {wch: 15}, // B
+                {wch: 15}, // C
+                {wch: 15}, // D
+                {wch: 15}, // E
+                {wch: 15}  // F
+            ];
+            ws['!cols'] = wscols;
+
+            // Agregar hoja al libro
+            XLSX.utils.book_append_sheet(wb, ws, 'Registro Completo');
+
+            // Generar archivo
+            const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            // Nombre del archivo con fecha
+            const nombreArchivo = `RegistroHoras_${document.getElementById('nombreApellido').value}_${mes}_${anio}.xlsx`;
+            
+            // Descargar archivo
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = nombreArchivo;
+            link.click();
+        }
+
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('input[type="number"], input[type="time"]')) {
+                calcularTotalPagar();
+            }
+        });
+
+        document.getElementById('mesSeleccionado').addEventListener('change', generarDiasMes);
+        document.getElementById('anioSeleccionado').addEventListener('change', generarDiasMes);
+        generarDiasMes();
+
+        function agregarEventosTimePicker() {
+            const timeInputs = document.querySelectorAll('input[type="time"]');
+            timeInputs.forEach(input => {
+                input.addEventListener('click', function() {
+                    this.showPicker();
+                });
+                input.addEventListener('touch', function() {
+                    this.showPicker();
+                });
+            });
+        }
+       
+
+function enviarPorEmail() {
+    const nombreApellido = document.getElementById('nombreApellido').value;
+    const mes = document.getElementById('mesSeleccionado').options[document.getElementById('mesSeleccionado').selectedIndex].text;
+    const anio = document.getElementById('anioSeleccionado').value;
+    const totalPagar = document.getElementById('totalPagar').textContent;
+
+    // Generar el Excel primero para asegurar que se descargue
+    generarExcel();
+
+    // Crear el cuerpo del correo
+    const asunto = `Registro de Horas - ${nombreApellido} - ${mes} ${anio}`;
+    const cuerpo = `
+Registro de Horas Trabajadas
+
+Trabajador: ${nombreApellido}
+Período: ${mes} ${anio}
+Total a Pagar: ${totalPagar}
+
+Por favor, encuentre adjunto el archivo Excel con el detalle completo.
+`;
+
+    // Abrir el cliente de correo predeterminado
+    window.location.href = `mailto:destinatario@ejemplo.com?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+}
+    </script>
+</body>
+</html>
