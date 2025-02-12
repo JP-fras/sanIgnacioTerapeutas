@@ -172,6 +172,15 @@
             gap: 1rem;
             margin: 0.5rem 0;
         }
+
+        #horasTabla tfoot tr {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        #horasTabla tfoot td {
+            border-top: 2px solid var(--primary-color);
+        }
     </style>
 </head>
 <body>
@@ -220,6 +229,7 @@
             <thead>
                 <tr>
                     <th>Fecha</th>
+                    <th>Día</th>
                     <th>Hora Entrada</th>
                     <th>Hora Salida</th>
                     <th>Horas Trabajadas</th>
@@ -228,6 +238,13 @@
                 </tr>
             </thead>
             <tbody id="diasMes"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5" style="text-align: right;"><strong>Total:</strong></td>
+                    <td id="totalHorasNormalesTabla">0</td>
+                    <td id="totalHorasExtrasTabla">0</td>
+                </tr>
+            </tfoot>
         </table>
 
         <div class="total-section">
@@ -275,13 +292,25 @@
             const tbody = document.getElementById('diasMes');
             tbody.innerHTML = '';
 
+            const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
             for (let dia = 1; dia <= diasMes; dia++) {
                 const fecha = new Date(anioSeleccionado, mesSeleccionado - 1, dia);
+                const nombreDia = diasSemana[fecha.getDay()];
                 const filaHTML = `
                     <tr>
                         <td>${fecha.toLocaleDateString('es-AR')}</td>
-                        <td><input type="time" class="horaEntrada" step="3600"></td>
-                        <td><input type="time" class="horaSalida" step="3600"></td>
+                        <td>${nombreDia}</td>
+                        <td>
+                            <select class="horaEntrada">
+                                ${generarOpcionesHoras()}
+                            </select>
+                        </td>
+                        <td>
+                            <select class="horaSalida">
+                                ${generarOpcionesHoras()}
+                            </select>
+                        </td>
                         <td class="horasTrabajadas">0</td>
                         <td><input type="number" class="horasNormales" value="0" min="0" step="0.5"></td>
                         <td class="horasExtras">0</td>
@@ -290,7 +319,6 @@
                 tbody.innerHTML += filaHTML;
             }
             agregarEventosCalculoHoras();
-            agregarEventosTimePicker();
         }
 
         function agregarEventosCalculoHoras() {
@@ -314,16 +342,20 @@
             const horasNormales = parseFloat(fila.querySelector('.horasNormales').value) || 0;
 
             if (horaEntrada && horaSalida) {
-                const entrada = new Date(`2023-01-01T${horaEntrada}`);
-                const salida = new Date(`2023-01-01T${horaSalida}`);
+                const [horasEntrada, minutosEntrada] = horaEntrada.split(':').map(Number);
+                const [horasSalida, minutosSalida] = horaSalida.split(':').map(Number);
                 
-                if (salida < entrada) {
+                // Convert to total hours
+                const totalHorasEntrada = horasEntrada + (minutosEntrada / 60);
+                const totalHorasSalida = horasSalida + (minutosSalida / 60);
+                
+                if (totalHorasSalida < totalHorasEntrada) {
                     alert('La hora de salida no puede ser menor que la hora de entrada');
                     fila.querySelector('.horaSalida').value = horaEntrada;
                     return;
                 }
 
-                const horasTrabajadas = (salida - entrada) / (1000 * 60 * 60);
+                const horasTrabajadas = totalHorasSalida - totalHorasEntrada;
                 
                 if (horasNormales > horasTrabajadas) {
                     alert('Las horas normales no pueden exceder las horas trabajadas');
@@ -336,6 +368,7 @@
                 fila.querySelector('.horasExtras').textContent = horasExtras.toFixed(2);
             }
             calcularTotalPagar();
+            actualizarTotalesTabla();
         }
 
         function agregarAdicional() {
@@ -436,6 +469,7 @@
             datos.push(['REGISTRO DE HORAS DIARIO']);
             datos.push([
                 'Fecha', 
+                'Día',
                 'Hora Entrada', 
                 'Hora Salida', 
                 'Horas Trabajadas', 
@@ -446,6 +480,7 @@
             document.querySelectorAll('#diasMes tr').forEach(fila => {
                 datos.push([
                     fila.querySelector('td:first-child').textContent,
+                    fila.querySelector('td:nth-child(2)').textContent,
                     fila.querySelector('.horaEntrada').value,
                     fila.querySelector('.horaSalida').value,
                     fila.querySelector('.horasTrabajadas').textContent,
@@ -453,6 +488,17 @@
                     fila.querySelector('.horasExtras').textContent
                 ]);
             });
+
+            // Agregar fila de totales
+            datos.push([
+                'TOTAL',
+                '',
+                '',
+                '',
+                '',
+                document.getElementById('totalHorasNormalesTabla').textContent,
+                document.getElementById('totalHorasExtrasTabla').textContent
+            ]);
             datos.push(['']);
 
             // Adicionales
@@ -500,12 +546,13 @@
 
             // Ajustar ancho de columnas
             const wscols = [
-                {wch: 20}, // A
-                {wch: 15}, // B
-                {wch: 15}, // C
-                {wch: 15}, // D
-                {wch: 15}, // E
-                {wch: 15}  // F
+                {wch: 15}, // A - Fecha
+                {wch: 12}, // B - Día
+                {wch: 12}, // C - Hora Entrada
+                {wch: 12}, // D - Hora Salida
+                {wch: 15}, // E - Horas Trabajadas
+                {wch: 15}, // F - Horas Normales
+                {wch: 15}  // G - Horas Extras
             ];
             ws['!cols'] = wscols;
 
@@ -530,37 +577,27 @@
             if (e.target.matches('input[type="number"], input[type="time"]')) {
                 calcularTotalPagar();
             }
+            if (e.target.matches('.horasNormales')) {
+                actualizarTotalesTabla();
+            }
         });
 
         document.getElementById('mesSeleccionado').addEventListener('change', generarDiasMes);
         document.getElementById('anioSeleccionado').addEventListener('change', generarDiasMes);
         generarDiasMes();
 
-        function agregarEventosTimePicker() {
-            const timeInputs = document.querySelectorAll('input[type="time"]');
-            timeInputs.forEach(input => {
-                input.addEventListener('click', function() {
-                    this.showPicker();
-                });
-                input.addEventListener('touch', function() {
-                    this.showPicker();
-                });
-            });
-        }
-       
+        function enviarPorEmail() {
+            const nombreApellido = document.getElementById('nombreApellido').value;
+            const mes = document.getElementById('mesSeleccionado').options[document.getElementById('mesSeleccionado').selectedIndex].text;
+            const anio = document.getElementById('anioSeleccionado').value;
+            const totalPagar = document.getElementById('totalPagar').textContent;
 
-function enviarPorEmail() {
-    const nombreApellido = document.getElementById('nombreApellido').value;
-    const mes = document.getElementById('mesSeleccionado').options[document.getElementById('mesSeleccionado').selectedIndex].text;
-    const anio = document.getElementById('anioSeleccionado').value;
-    const totalPagar = document.getElementById('totalPagar').textContent;
+            // Generar el Excel primero para asegurar que se descargue
+            generarExcel();
 
-    // Generar el Excel primero para asegurar que se descargue
-    generarExcel();
-
-    // Crear el cuerpo del correo
-    const asunto = `Registro de Horas - ${nombreApellido} - ${mes} ${anio}`;
-    const cuerpo = `
+            // Crear el cuerpo del correo
+            const asunto = `Registro de Horas - ${nombreApellido} - ${mes} ${anio}`;
+            const cuerpo = `
 Registro de Horas Trabajadas
 
 Trabajador: ${nombreApellido}
@@ -570,9 +607,34 @@ Total a Pagar: ${totalPagar}
 Por favor, encuentre adjunto el archivo Excel con el detalle completo.
 `;
 
-    // Abrir el cliente de correo predeterminado
-    window.location.href = `mailto:destinatario@ejemplo.com?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-}
+            // Abrir el cliente de correo predeterminado
+            window.location.href = `mailto:destinatario@ejemplo.com?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+        }
+
+        function generarOpcionesHoras() {
+            let opciones = '';
+            for (let hora = 0; hora < 24; hora++) {
+                for (let minutos of ['00', '30']) {
+                    const horaFormateada = hora.toString().padStart(2, '0');
+                    opciones += `<option value="${horaFormateada}:${minutos}">${horaFormateada}:${minutos}</option>`;
+                }
+            }
+            opciones += '<option value="24:00">24:00</option>';
+            return opciones;
+        }
+
+        function actualizarTotalesTabla() {
+            let totalNormales = 0;
+            let totalExtras = 0;
+
+            document.querySelectorAll('#diasMes tr').forEach(fila => {
+                totalNormales += parseFloat(fila.querySelector('.horasNormales').value) || 0;
+                totalExtras += parseFloat(fila.querySelector('.horasExtras').textContent) || 0;
+            });
+
+            document.getElementById('totalHorasNormalesTabla').textContent = totalNormales.toFixed(2);
+            document.getElementById('totalHorasExtrasTabla').textContent = totalExtras.toFixed(2);
+        }
     </script>
 </body>
 </html>
