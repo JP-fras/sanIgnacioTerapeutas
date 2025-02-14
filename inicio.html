@@ -244,6 +244,10 @@
                     <td id="totalHorasNormalesTabla">0</td>
                     <td id="totalHorasExtrasTabla">0</td>
                 </tr>
+                <tr>
+                    <td colspan="5" style="text-align: right;"><strong>Total Horas:</strong></td>
+                    <td colspan="2" id="totalHorasTabla">0</td>
+                </tr>
             </tfoot>
         </table>
 
@@ -489,7 +493,7 @@
                 ]);
             });
 
-            // Agregar fila de totales
+            // Agregar filas de totales
             datos.push([
                 'TOTAL',
                 '',
@@ -499,30 +503,49 @@
                 document.getElementById('totalHorasNormalesTabla').textContent,
                 document.getElementById('totalHorasExtrasTabla').textContent
             ]);
+            datos.push([
+                'TOTAL HORAS',
+                '',
+                '',
+                '',
+                '',
+                document.getElementById('totalHorasTabla').textContent,
+                ''
+            ]);
             datos.push(['']);
 
-            // Adicionales
-            datos.push(['ADICIONALES']);
-            datos.push(['Razón', 'Monto']);
-            document.querySelectorAll('#listaAdicionales div').forEach(adicional => {
-                datos.push([
-                    adicional.querySelector('.adicionalRazon').value,
-                    `$${adicional.querySelector('.adicionalMonto').value}`
-                ]);
-            });
-            datos.push(['Total Adicionales', document.getElementById('totalAdicionales').textContent]);
-            datos.push(['']);
+            // Adicionales y Adelantos en paralelo
+            datos.push(['ADICIONALES', '', '', '', 'ADELANTOS']);
+            datos.push(['Razón', 'Monto', '', '', 'Razón', 'Monto']);
 
-            // Adelantos
-            datos.push(['ADELANTOS']);
-            datos.push(['Razón', 'Monto']);
-            document.querySelectorAll('#listaAdelantos div').forEach(adelanto => {
+            // Obtener todos los adicionales y adelantos
+            const adicionales = Array.from(document.querySelectorAll('#listaAdicionales div'));
+            const adelantos = Array.from(document.querySelectorAll('#listaAdelantos div'));
+            const maxFilas = Math.max(adicionales.length, adelantos.length);
+
+            // Agregar adicionales y adelantos en paralelo
+            for (let i = 0; i < maxFilas; i++) {
+                const adicional = adicionales[i];
+                const adelanto = adelantos[i];
                 datos.push([
-                    adelanto.querySelector('.adelantoRazon').value,
-                    `$${adelanto.querySelector('.adelantoMonto').value}`
+                    adicional ? adicional.querySelector('.adicionalRazon').value : '',
+                    adicional ? `$${adicional.querySelector('.adicionalMonto').value}` : '',
+                    '',
+                    '',
+                    adelanto ? adelanto.querySelector('.adelantoRazon').value : '',
+                    adelanto ? `$${adelanto.querySelector('.adelantoMonto').value}` : ''
                 ]);
-            });
-            datos.push(['Total Adelantos', document.getElementById('totalAdelantos').textContent]);
+            }
+
+            // Totales de adicionales y adelantos
+            datos.push([
+                'Total Adicionales',
+                document.getElementById('totalAdicionales').textContent,
+                '',
+                '',
+                'Total Adelantos',
+                document.getElementById('totalAdelantos').textContent
+            ]);
             datos.push(['']);
 
             // Agregar presentismo al desglose final
@@ -546,12 +569,12 @@
 
             // Ajustar ancho de columnas
             const wscols = [
-                {wch: 15}, // A - Fecha
-                {wch: 12}, // B - Día
+                {wch: 15}, // A - Fecha/Razón
+                {wch: 12}, // B - Día/Monto
                 {wch: 12}, // C - Hora Entrada
                 {wch: 12}, // D - Hora Salida
-                {wch: 15}, // E - Horas Trabajadas
-                {wch: 15}, // F - Horas Normales
+                {wch: 15}, // E - Horas Trabajadas/Razón
+                {wch: 15}, // F - Horas Normales/Monto
                 {wch: 15}  // G - Horas Extras
             ];
             ws['!cols'] = wscols;
@@ -608,7 +631,7 @@ Por favor, encuentre adjunto el archivo Excel con el detalle completo.
 `;
 
             // Abrir el cliente de correo predeterminado
-            window.location.href = `mailto:destinatario@ejemplo.com?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+            window.location.href = `mailto:comunidadsanignacio@yahoo.com.ar?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
         }
 
         function generarOpcionesHoras() {
@@ -634,6 +657,7 @@ Por favor, encuentre adjunto el archivo Excel con el detalle completo.
 
             document.getElementById('totalHorasNormalesTabla').textContent = totalNormales.toFixed(2);
             document.getElementById('totalHorasExtrasTabla').textContent = totalExtras.toFixed(2);
+            document.getElementById('totalHorasTabla').textContent = (totalNormales + totalExtras).toFixed(2);
         }
     </script>
 </body>
